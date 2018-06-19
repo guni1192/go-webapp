@@ -1,5 +1,12 @@
 package main
 
+import (
+  "log"
+  "net/http"
+  "github.com/gorilla/websocket"
+)
+
+
 type room struct {
   // 他のクライアントに転送するためのメッセージを保持する
   forward chan []byte
@@ -13,7 +20,10 @@ type room struct {
 
 func newRoom() *room {
   return &room {
-    foward: make(chan []byte),
+    forward: make(chan []byte),
+    join: make(chan *client),
+    leave: make(chan *client),
+    clients: make(map[*client]bool),
   }
 }
 
@@ -23,7 +33,7 @@ func (r *room) run() {
     case client := <-r.join:
       r.clients[client] = true
     case client := <-r.leave:
-      delete(r.clients, r.forward)
+      delete(r.clients, client)
       close(client.send)
     case msg := <-r.forward:
       for client := range r.clients {
@@ -50,7 +60,7 @@ var upgrader = &websocket.Upgrader{
 }
 
 func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
-  socket, err := upgrader.Upgrader(w, req, nil)
+  socket, err := upgrader.Upgrade(w, req, nil)
   if err != nil {
     log.Fatal("ServeHTTP: ", err)
     return

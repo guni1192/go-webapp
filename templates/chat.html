@@ -1,9 +1,60 @@
+<!DOCTYPE html>
 <html>
   <head>
+    <meta charset="">
     <title>Chat</title>
+    <style>
+      input { display: block; }
+      ul { list-style: none; }
+    </style>
   </head>
   <body>
-    Let's enjoy a chat!
+
+    <ul id="messages">
+    </ul>
+
+    <h3>WebSocketを使ったチャットアプリケーション</h3>
+
+    <form id="chatbox">
+      <textarea></textarea>
+      <input type="submit" value="送信">
+    </form>
+    <script
+      src="https://code.jquery.com/jquery-3.3.1.js"
+      integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60="
+      crossorigin="anonymous"></script>
+    <script>
+      $(function() {
+        let socket = null
+        const msgBox = $("#chatbox textarea");
+        const messages = $("#messages");
+        $("#chatbox").submit(() => {
+          if (!msgBox.val()) { return false }
+          if ( !socket ) {
+            alert("Error: WebSocket is not connected.")
+            return false
+          }
+          socket.send(msgBox.val());
+          msgBox.val("");
+          return false
+        })
+
+        if (!window["WebSocket"]) {
+          alert("Error: Your browser does not support WebSocket");
+        }
+        else {
+          socket = new WebSocket("ws://localhost:8080/room");
+          socket.onclose = () => {
+            alert("Connection is finished")
+          }
+
+          socket.onmessage = function(e) {
+            console.log(e.data)
+            messages.append($("<li>").text(e.data))
+          }
+        }
+
+      })
+    </script>
   </body>
 </html>
-
